@@ -1,0 +1,12 @@
+# netlify.toml
+#
+# Tells Netlify where the static site and the serverless function live.
+# This file is what makes a Git-connected Netlify deploy pick up
+# netlify/functions/ automatically — plain drag-and-drop (Netlify Drop)
+# does NOT run this file or deploy functions, only static files. See the
+# README for the GitHub + Netlify deployment steps needed once you want
+# the real AI generation feature working.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
