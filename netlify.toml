@@ -1,12 +1,14 @@
 # netlify.toml
 #
 # Tells Netlify where the static site and the serverless function live.
-# This file is what makes a Git-connected Netlify deploy pick up
-# netlify/functions/ automatically — plain drag-and-drop (Netlify Drop)
-# does NOT run this file or deploy functions, only static files. See the
-# README for the GitHub + Netlify deployment steps needed once you want
-# the real AI generation feature working.
+# command = "" is critical — it tells Netlify there is NO build step.
+# Without this, Netlify may try to detect and run a framework build tool,
+# then hang or fail waiting for a build that should never happen.
 
 [build]
+  command = ""
   publish = "."
   functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
