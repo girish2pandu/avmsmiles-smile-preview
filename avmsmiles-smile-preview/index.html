@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- viewport-fit/maximum-scale kept off on purpose: pinch-zoom should still
+       work for someone checking their own photo before sharing it. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#3b3591" />
+  <title>AVMSmiles — Try Your New Smile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <span class="brand">
+        <!-- Drop an actual AVMSmiles logo file into this folder named
+             logo.png and it's used automatically. Until then, this falls
+             back to a text wordmark in AVMSmiles' verified brand color. -->
+        <img
+          src="logo.png"
+          alt="AVMSmiles"
+          class="brand-logo-img"
+          id="brandLogoImg"
+          style="display:none"
+          onload="this.style.display='block'; document.getElementById('brandWordmarkFallback').style.display='none';"
+          onerror="this.style.display='none';"
+        />
+        <span class="brand-wordmark-fallback" id="brandWordmarkFallback">
+          <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <path d="M5 13c2.8 7 8 11 11 11s8.2-4 11-11" stroke="#e02229" stroke-width="3" stroke-linecap="round" />
+          </svg>
+          <span class="brand-wordmark">AVMSmiles</span>
+        </span>
+      </span>
+    </header>
+
+    <main class="flow">
+      <div id="errorBanner" class="banner banner-danger hidden" role="alert"></div>
+
+      <!-- Step 1: capture -->
+      <section id="step-capture" class="step card">
+        <p class="step-label">Step 1 of 2</p>
+        <h1 class="step-title">Try your new smile</h1>
+        <p class="step-description">
+          Take a selfie with a natural, full smile — teeth visible, facing the camera, in good
+          light. That's what gives you the best preview.
+        </p>
+
+        <label class="capture-btn" id="captureLabel">
+          <span id="captureLabelText">Take my photo</span>
+          <!-- capture="user" opens the front/selfie camera by default, since
+               you're photographing yourself, not someone else. -->
+          <input type="file" accept="image/*" capture="user" id="photoInput" />
+        </label>
+
+        <div id="capturePreview" class="capture-preview hidden">
+          <img id="capturedThumb" alt="Your photo" />
+        </div>
+
+        <button id="toGenerateBtn" class="btn btn-primary btn-block" disabled>
+          See my smile preview
+        </button>
+
+        <p class="privacy-note">
+          Your photo is used only to generate this preview — it isn't stored or shared anywhere
+          unless you choose to share your result yourself.
+        </p>
+      </section>
+
+      <!-- Step 2: generating (brief, intentional pause) -->
+      <section id="step-generating" class="step card hidden">
+        <div class="generating-wrap">
+          <svg width="40" height="40" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <path
+              id="generatingArc"
+              d="M5 13c2.8 7 8 11 11 11s8.2-4 11-11"
+              stroke="#e02229"
+              stroke-width="3"
+              stroke-linecap="round"
+              class="arc-draw"
+            />
+          </svg>
+          <p class="generating-text">Creating your smile preview…</p>
+        </div>
+      </section>
+
+      <!-- Step 3: result + share -->
+      <section id="step-result" class="step card hidden">
+        <p class="step-label">Step 2 of 2</p>
+        <h1 class="step-title">Here's your preview</h1>
+
+        <div class="composite-wrap">
+          <canvas id="compositeCanvas"></canvas>
+        </div>
+
+        <p id="modeBadge" class="mode-badge"></p>
+
+        <p class="disclaimer">
+          This is a simulated preview for illustration purposes only. It does not guarantee the
+          exact clinical outcome of any treatment. Ask your dentist for a full evaluation.
+        </p>
+
+        <!-- Shown only once CLINIC_WHATSAPP_NUMBER is filled in in script.js —
+             see the README. This is the main conversion action, so it leads. -->
+        <a id="bookConsultBtn" class="btn btn-cta btn-block hidden" target="_blank" rel="noopener">
+          Book your free consultation
+        </a>
+
+        <button id="shareBtn" class="btn btn-secondary btn-block hidden">
+          Share my preview
+        </button>
+
+        <div id="fallbackShare" class="fallback-share hidden">
+          <button id="downloadBtn" class="btn btn-secondary btn-block">Download my preview</button>
+          <a id="openWhatsappLink" class="btn btn-secondary btn-block" target="_blank" rel="noopener">
+            Open WhatsApp
+          </a>
+          <p class="fallback-hint">
+            Your browser can&rsquo;t attach the photo automatically — download it above, then
+            attach it inside WhatsApp before sending.
+          </p>
+        </div>
+
+        <button id="resetBtn" class="btn btn-ghost btn-block">Try again</button>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

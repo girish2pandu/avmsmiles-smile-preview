@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AVMSmiles — Gemini API Test</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; background: #f5f5f5; color: #1a1a1a; }
+    h1 { color: #3b3591; font-size: 20px; }
+    .card { background: white; border-radius: 12px; padding: 24px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+    input[type=password] { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 16px; }
+    input[type=file] { display: block; margin-bottom: 16px; }
+    button { background: #3b3591; color: white; border: none; border-radius: 8px; padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    .status { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 13.5px; white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
+    .info { background: #e8f0fe; color: #1a237e; }
+    .error { background: #fce8e8; color: #b71c1c; }
+    .success { background: #e8f5e9; color: #1b5e20; }
+    .warn { background: #fff8e1; color: #5d4037; border: 1px solid #ffe082; }
+    .images { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .images img { width: 100%; border-radius: 8px; border: 1px solid #ddd; }
+    .images p { text-align: center; font-size: 12px; font-weight: 700; color: #555; margin: 4px 0 0; }
+    .step { font-size: 13px; margin: 4px 0; padding: 2px 0; }
+    .step.ok { color: #2e7d32; } .step.fail { color: #c62828; } .step.running { color: #1565c0; }
+  </style>
+</head>
+<body>
+  <h1>🔬 Gemini API Test — AVMSmiles</h1>
+  <p style="font-size:14px;color:#555">Tests your key directly in the browser — no server needed.
+  Fix any errors here first, then update Netlify.</p>
+
+  <div class="card warn" style="margin-top:0">
+    <strong>⚠️ Billing must be enabled</strong><br>
+    Google's free Gemini tier has had <strong>zero image generation quota since December 2025</strong>.
+    You must enable billing in Google Cloud Console for image editing to work — it costs
+    roughly ₹3 per image (~$0.04). Without billing, you will get a 429 or 403 error even
+    with a valid key.<br><br>
+    <a href="https://console.cloud.google.com/billing" target="_blank" style="color:#3b3591;font-weight:600">
+      → Enable billing at console.cloud.google.com/billing
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="warn" style="font-size:13px;margin-bottom:16px">
+      ⚠️ This file exposes your key — delete <strong>test-gemini.html</strong>
+      from your project folder after testing.
+    </div>
+
+    <label>Gemini API Key (from aistudio.google.com)</label>
+    <input type="password" id="apiKey" placeholder="AIza..." />
+
+    <label>Photo — smiling selfie, teeth clearly visible</label>
+    <input type="file" id="photoInput" accept="image/*" />
+
+    <button id="testBtn" disabled>Test Gemini image editing</button>
+    <div id="log" style="margin-top:14px"></div>
+    <div class="images" id="imageRow" style="display:none">
+      <div><img id="beforeImg" alt="Before" /><p>BEFORE (your photo)</p></div>
+      <div><img id="afterImg" alt="After" /><p>SIMULATED PREVIEW (AI edited)</p></div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let loadedImg = null;
+
+    function log(msg, cls='info') {
+      const d = document.getElementById('log');
+      const el = document.createElement('div');
+      el.className = 'status ' + cls;
+      el.textContent = msg;
+      d.appendChild(el);
+      el.scrollIntoView({behavior:'smooth'});
+    }
+    function clearLog() { $('log').innerHTML = ''; $('imageRow').style.display='none'; }
+
+    $('apiKey').addEventListener('input', checkReady);
+    $('photoInput').addEventListener('change', () => {
+      const file = $('photoInput').files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { loadedImg = img; $('beforeImg').src = url; checkReady(); };
+      img.src = url;
+    });
+
+    function checkReady() {
+      $('testBtn').disabled = !($('apiKey').value.trim() && loadedImg);
+    }
+
+    function resize(img, maxDim) {
+      const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+      const scale = Math.min(1, maxDim / Math.max(iw, ih));
+      const w = Math.round(iw * scale), h = Math.round(ih * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, w, h);
+      log(`📐 Resized to ${w}×${h}px for upload`, 'info');
+      return c.toDataURL('image/jpeg', 0.85).split(',')[1];
+    }
+
+    const PROMPT = "Edit this photo: make the person's teeth look perfectly straight, evenly spaced, and naturally white — as they would look after clear aligner treatment. Keep everything else completely unchanged: face, skin, eyes, hair, expression, clothing, background, lighting. Change ONLY the teeth.";
+
+    $('testBtn').addEventListener('click', async () => {
+      clearLog();
+      $('testBtn').disabled = true;
+      const apiKey = $('apiKey').value.trim();
+
+      log('Step 1 — Resizing image...', 'info');
+      const base64 = resize(loadedImg, 1280);
+
+      // ONLY use v1beta — v1 does not support responseModalities for image models
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent';
+      log('Step 2 — Calling Gemini API (v1beta/gemini-2.5-flash-image)...', 'info');
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { inline_data: { mime_type: 'image/jpeg', data: base64 } },
+                { text: PROMPT }
+              ]
+            }],
+            generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+          })
+        });
+
+        const data = await res.json();
+        log(`Step 3 — HTTP response: ${res.status}`, res.ok ? 'ok' : 'fail');
+
+        if (!res.ok) {
+          const msg = data?.error?.message || JSON.stringify(data, null, 2);
+          const status = res.status;
+
+          if (status === 429) {
+            log(`❌ 429 QUOTA EXCEEDED\n\nYour billing is NOT enabled, or you have hit the rate limit.\n\nFix: Go to console.cloud.google.com/billing → link a payment method → come back and try again.\n\nGoogle API error: ${msg}`, 'error');
+          } else if (status === 403) {
+            log(`❌ 403 PERMISSION DENIED\n\nEither your API key is invalid, or billing is not enabled on the project.\n\nGoogle API error: ${msg}`, 'error');
+          } else if (status === 400) {
+            log(`❌ 400 BAD REQUEST\n\nRequest format issue. Full error:\n${msg}`, 'error');
+          } else {
+            log(`❌ Error ${status}:\n${msg}`, 'error');
+          }
+          $('testBtn').disabled = false;
+          return;
+        }
+
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        const imagePart = parts.find(p => p.inlineData?.data);
+        const textPart = parts.find(p => p.text)?.text || '';
+
+        if (!imagePart) {
+          log(`⚠️ Gemini responded (200) but returned NO image.\n\nThis usually means:\n• Safety filter blocked the edit\n• The photo didn't have visible teeth\n• Billing issue\n\nModel text response: "${textPart}"\n\nFull response:\n${JSON.stringify(data, null, 2)}`, 'warn');
+          $('testBtn').disabled = false;
+          return;
+        }
+
+        log('Step 4 — Rendering result...', 'info');
+        $('afterImg').src = `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
+        $('imageRow').style.display = 'grid';
+        log('✅ SUCCESS! Gemini returned an edited image. Your API key and billing are working correctly.\n\nNext step: upload the updated generate-smile.js to GitHub and trigger a Netlify redeploy.', 'success');
+
+      } catch (err) {
+        log(`❌ Network error — could not reach Google's API.\n${err}\n\nCheck your internet connection.`, 'error');
+      }
+
+      $('testBtn').disabled = false;
+    });
+  </script>
+</body>
+</html>
